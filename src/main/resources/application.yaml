@@ -1,0 +1,26 @@
+spring:
+  application:
+
+    name: WORM Use Demo
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/worm_demo}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
+
+logging:
+  level:
+    br.com.liviacare.worm.orm.OrmManager: DEBUG
+
+server:
+  port: 8090
+
+worm:
+  batch-size: 1000
+  enable-schema-validation: true
+  query:
+    repository:
+      base-packages:
+        - br.com.worm.demo

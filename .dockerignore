@@ -1,0 +1,11 @@
+target
+.git
+.gitignore
+.idea
+*.iml
+README.md
+ACTIVERECORD.md
+HELP.md
+PACKAGE_ORGANIZATION.md
+WORM_MIGRATION.md
+
