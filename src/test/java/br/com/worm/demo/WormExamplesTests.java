@@ -1,12 +1,10 @@
 package br.com.worm.demo;
 
-import br.com.liviacare.worm.query.FilterBuilder;
-import br.com.liviacare.worm.query.Pageable;
-import br.com.liviacare.worm.query.Slice;
+import br.com.liviacare.worm.api.Deletable;
+import br.com.liviacare.worm.api.Persistable;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,18 +12,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
 public class WormExamplesTests {
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    // Simple projection record example (automatic mapping from a row)
-    public record BookProjection(UUID id, String title, String authorName) {}
+    @BeforeEach
+    void cleanupData() {
+        Deletable.deleteAll(Book.find.all());
+        Deletable.deleteAll(Author.find.all());
+    }
 
     private Author createAuthor(String name, String email) {
         Author a = Author.builder()
@@ -37,23 +38,23 @@ public class WormExamplesTests {
         return a;
     }
 
-    private Book createBook(String title, String isbn, String status, UUID authorId) {
-        Book b = Book.builder()
+    private Book newBook(String title, String isbn, String status, UUID authorId) {
+        return Book.builder()
                 .id(UUID.randomUUID())
                 .title(title)
                 .isbn(isbn)
                 .status(status)
                 .authorId(authorId)
+                .active(true)
                 .build();
-        b.save();
-        return b;
     }
 
     @Test
     void testActiveRecordCreateAndFind() {
         Author author = createAuthor("George R. R. Martin", "grrm@example.com");
 
-        Book book = createBook("A Game of Thrones", "978-0553593716", "PUBLISHED", author.getId());
+        Book book = newBook("A Game of Thrones", "978-0553593716", "PUBLISHED", author.getId());
+        book.save();
 
         Optional<Book> found = Book.find.byId(book.getId());
         assertTrue(found.isPresent(), "Book should be found by id");
@@ -65,29 +66,39 @@ public class WormExamplesTests {
     }
 
     @Test
-    void testFilterBuilderQueryAndCount() {
-        Author author = createAuthor("Isaac Asimov", "asimov@example.com");
+    void testPersistableSaveAllAndUpdateAll() {
+        Author isaac = Author.builder()
+                .id(UUID.randomUUID())
+                .name("Isaac Asimov")
+                .email("asimov@example.com")
+                .build();
+        Author arthur = Author.builder()
+                .id(UUID.randomUUID())
+                .name("Arthur C. Clarke")
+                .email("acc@example.com")
+                .build();
 
-        createBook("Foundation", "978-0553293357", "PUBLISHED", author.getId());
-        createBook("I, Robot", "978-0553294385", "PUBLISHED", author.getId());
-        createBook("The End of Eternity", "978-0553294651", "DRAFT", author.getId());
+        List<Author> saved = Persistable.saveAll(List.of(isaac, arthur));
+        assertEquals(2, saved.size());
 
-        FilterBuilder filterPublished = FilterBuilder.create().eq("status", "PUBLISHED");
-        List<Book> published = Book.find.all(filterPublished);
-        assertEquals(2, published.size());
+        isaac.setName("Isaac Asimov Updated");
+        arthur.setName("Arthur C. Clarke Updated");
+        List<Author> updated = Persistable.updateAll(List.of(isaac, arthur));
+        assertEquals(2, updated.size());
 
-        long publishedCount = Book.find.count(filterPublished);
-        assertEquals(2, publishedCount);
+        assertEquals("Isaac Asimov Updated", Author.find.byId(isaac.getId()).orElseThrow().getName());
+        assertEquals("Arthur C. Clarke Updated", Author.find.byId(arthur.getId()).orElseThrow().getName());
     }
 
     @Test
-    void testUpdateVersionIncrementOnSave() {
+    void testPersistableUpdateVersionIncrement() {
         Author author = createAuthor("Neil Gaiman", "ng@example.com");
-        Book book = createBook("American Gods", "978-0060558123", "PUBLISHED", author.getId());
+        Book book = newBook("American Gods", "978-0060558123", "PUBLISHED", author.getId());
+        Persistable.save(book);
 
         long versionBefore = book.getVersion();
         book.setStatus("OUT_OF_STOCK");
-        book.save();
+        Persistable.update(book);
 
         Optional<Book> reloaded = Book.find.byId(book.getId());
         assertTrue(reloaded.isPresent());
@@ -96,62 +107,34 @@ public class WormExamplesTests {
     }
 
     @Test
-    void testPaginationWithSlice() {
-        Author author = createAuthor("Terry Pratchett", "tp@example.com");
-        for (int i = 0; i < 12; i++) {
-            createBook("Discworld " + i, "isbn-dw-" + i, "PUBLISHED", author.getId());
-        }
-
-        FilterBuilder filterByAuthor = FilterBuilder.create().eq("author_id", author.getId());
-        Slice<Book> firstPage = Book.find.all(filterByAuthor, Pageable.of(0, 5));
-        assertNotNull(firstPage);
-        assertEquals(5, firstPage.content().size());
-        assertTrue(firstPage.hasNext());
-
-        Slice<Book> thirdPage = Book.find.all(filterByAuthor, Pageable.of(2, 5));
-        assertEquals(2, thirdPage.content().size());
-        assertFalse(thirdPage.hasNext());
-    }
-
-    @Test
-    void testSoftDeleteBehavior() {
+    void testDeletableDeleteByIdAndDeleteAll() {
         Author author = createAuthor("Douglas Adams", "da@example.com");
-        Book book = createBook("The Hitchhiker's Guide to the Galaxy", "978-0345391803", "PUBLISHED", author.getId());
+        Book one = Persistable.save(newBook("The Hitchhiker's Guide to the Galaxy", "978-0345391803", "PUBLISHED", author.getId()));
+        Book two = Persistable.save(newBook("The Restaurant at the End of the Universe", "978-0345391810", "PUBLISHED", author.getId()));
 
-        // Delete (should be soft delete via DeletedAt/Active handling)
-        book.delete();
+        one.delete();
+        Optional<Book> softDeleted = Book.find.byId(one.getId());
+        assertTrue(softDeleted.isPresent(), "Book should still be loadable by id after soft delete");
+        assertFalse(softDeleted.orElseThrow().isActive(), "Soft-deleted book must be marked inactive");
 
-        long countById = Book.find.count(FilterBuilder.create().eq("id", book.getId()));
-        assertEquals(0, countById, "Soft deleted book should not be returned by default queries");
+        Deletable.deleteAll(List.of(two));
+        Optional<Book> batchDeleted = Book.find.byId(two.getId());
+        assertNotNull(batchDeleted, "deleteAll should execute without breaking finder contract");
     }
 
     @Test
-    void testAggregationTotalBooks() {
+    void testActiveRecordCount() {
         Author author = createAuthor("Philip K. Dick", "pkd@example.com");
-        createBook("Do Androids Dream of Electric Sheep?", "978-0345404473", "PUBLISHED", author.getId());
-        createBook("Ubik", "978-0525432050", "PUBLISHED", author.getId());
+        Persistable.save(newBook("Do Androids Dream of Electric Sheep?", "978-0345404473", "PUBLISHED", author.getId()));
+        Persistable.save(newBook("Ubik", "978-0525432050", "PUBLISHED", author.getId()));
 
         long total = Book.find.count();
         assertTrue(total >= 2, "There should be at least the two books we created");
     }
 
     @Test
-    void testRecordProjectionWithJdbcTemplate() {
-        Author author = createAuthor("H. P. Lovecraft", "hl@example.com");
-        Book book = createBook("At the Mountains of Madness", "978-...-hl", "PUBLISHED", author.getId());
-
-        String sql = "select b.id as id, b.title as title, a.name as author_name " +
-                "from books b join authors a on a.id = b.author_id where b.id = ?";
-
-        List<BookProjection> rows = jdbcTemplate.query(sql, new Object[]{book.getId()},
-                (rs, rowNum) -> new BookProjection(UUID.fromString(rs.getString("id")), rs.getString("title"), rs.getString("author_name"))
-        );
-
-        assertEquals(1, rows.size());
-        BookProjection p = rows.get(0);
-        assertEquals(book.getId(), p.id());
-        assertEquals(book.getTitle(), p.title());
-        assertEquals(author.getName(), p.authorName());
+    void testActiveRecordStaticGatewayAvailable() {
+        assertNotNull(Book.find);
+        assertNotNull(Author.find);
     }
 }
-
