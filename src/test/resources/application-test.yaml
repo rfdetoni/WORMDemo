@@ -1,9 +1,10 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:worm_demo_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    # Default to a local Postgres for integration tests. You can override with env vars.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/worm_demo}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
   flyway:
     enabled: false
   sql:
@@ -12,8 +13,19 @@ spring:
 
 worm:
   enable-schema-validation: false
+
   query:
     repository:
       base-packages:
         - br.com.worm.demo
+
+logging:
+  level:
+    root: WARN
+    br.com.liviacare.worm: off
+    br.com.liviacare.worm.orm.sql: off
+    org.hibernate.SQL: WARN
+    org.hibernate.orm: WARN
+    org.springframework: WARN
+    com.zaxxer.hikari: WARN
 

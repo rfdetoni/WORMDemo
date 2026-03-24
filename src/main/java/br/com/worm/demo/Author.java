@@ -13,6 +13,12 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Author entity optimized for WORM best practices (Section 23, 27).
+ * - Uses ActiveRecord for entity-centric operations
+ * - Supports projection queries via AuthorSummary.find.*
+ * - Bulk batch operations via saveAllBatch, updateAllBatch, deleteAllBatch
+ */
 @DbTable("authors")
 @Getter
 @Setter

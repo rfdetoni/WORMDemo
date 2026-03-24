@@ -1,4 +1,4 @@
-CREATE TABLE authors (
+CREATE TABLE IF NOT EXISTS authors (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE authors (
     version BIGINT DEFAULT 0
 );
 
-CREATE TABLE books (
+CREATE TABLE IF NOT EXISTS books (
     id UUID PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     isbn VARCHAR(50) UNIQUE NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE books (
     author_id UUID NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP WITH TIME ZONE,
+    deleted_at TIMESTAMP,
 active BOOLEAN DEFAULT TRUE,
     version BIGINT DEFAULT 0,
     CONSTRAINT fk_books_authors FOREIGN KEY (author_id) REFERENCES authors(id)

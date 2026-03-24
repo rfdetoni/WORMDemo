@@ -1,6 +1,5 @@
 spring:
   application:
-
     name: WORM Use Demo
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/worm_demo}
@@ -9,17 +8,29 @@ spring:
     driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
   flyway:
     enabled: ${SPRING_FLYWAY_ENABLED:true}
-
-logging:
-  level:
-    br.com.liviacare.worm.orm.OrmManager: DEBUG
-
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 1000
+        order_inserts: true
+        order_updates: true
 server:
   port: 8090
 
 worm:
   batch-size: 1000
   enable-schema-validation: true
+  save-try-update-first: true
+  insert-strategy: UPSERT
+  transaction-enabled: true
+  bulk-copy-threshold: 20
+  bulk-unnest-threshold: 10
+  async-sql-log-enabled: true
+  parallel-mapping-enabled: false
+  parallel-mapping-threshold: 1000
   query:
     repository:
       base-packages:
