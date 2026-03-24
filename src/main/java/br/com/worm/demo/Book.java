@@ -13,6 +13,12 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Book entity optimized for WORM best practices (Section 23, 27).
+ * - Supports projection queries via BookProjection.find.* and BookDto.find.*
+ * - Bulk batch operations via saveAllBatch, updateAllBatch, deleteAllBatch
+ * - Query plan caching for repeated queries with same shape
+ */
 @DbTable("books")
 @Getter
 @Setter

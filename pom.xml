@@ -43,11 +43,18 @@
 
     <dependencies>
         <!-- WORM -->
-        <dependency>
-            <groupId>com.github.rfdetoni</groupId>
-            <artifactId>worm</artifactId>
-            <version>1.0.2</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.github.rfdetoni</groupId>-->
+<!--            <artifactId>worm</artifactId>-->
+<!--            <version>1.0.4</version>-->
+<!--        </dependency>-->
+
+                <dependency>
+                    <groupId>br.com.liviacare</groupId>
+                    <artifactId>worm</artifactId>
+                    <version>1.0.4</version>
+                </dependency>
+
 
         <!-- JPA for benchmark -->
         <dependency>

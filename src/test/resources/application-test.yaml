@@ -13,6 +13,7 @@ spring:
 
 worm:
   enable-schema-validation: false
+
   query:
     repository:
       base-packages:
@@ -21,7 +22,8 @@ worm:
 logging:
   level:
     root: WARN
-    br.com.liviacare.worm: WARN
+    br.com.liviacare.worm: off
+    br.com.liviacare.worm.orm.sql: off
     org.hibernate.SQL: WARN
     org.hibernate.orm: WARN
     org.springframework: WARN

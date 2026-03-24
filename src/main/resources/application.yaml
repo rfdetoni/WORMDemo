@@ -17,13 +17,20 @@ spring:
           batch_size: 1000
         order_inserts: true
         order_updates: true
-
 server:
   port: 8090
 
 worm:
   batch-size: 1000
   enable-schema-validation: true
+  save-try-update-first: true
+  insert-strategy: UPSERT
+  transaction-enabled: true
+  bulk-copy-threshold: 20
+  bulk-unnest-threshold: 10
+  async-sql-log-enabled: true
+  parallel-mapping-enabled: false
+  parallel-mapping-threshold: 1000
   query:
     repository:
       base-packages:

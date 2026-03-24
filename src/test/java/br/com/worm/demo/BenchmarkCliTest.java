@@ -6,6 +6,8 @@ import br.com.liviacare.worm.query.FilterBuilder;
 import br.com.liviacare.worm.query.Pageable;
 import br.com.worm.demo.repository.AuthorRepository;
 import br.com.worm.demo.repository.BookRepository;
+import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,8 +16,6 @@ import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.persistence.EntityManagerFactory;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.management.GarbageCollectorMXBean;
@@ -23,13 +23,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -195,20 +189,18 @@ public class BenchmarkCliTest {
             long heapBefore = usedHeapMb();
             long cpuBefore  = cpuSnapshot();
             long gcBefore   = gcTimeMs();
-            Long durationMsObj = transactionTemplate.execute(status -> {
-                return switch (scenario) {
-                    case "selectById"          -> jpa_selectById(ops);
-                    case "selectCountByStatus" -> jpa_selectCountByStatus(ops);
-                    case "selectPageByAuthor"  -> jpa_selectPageByAuthor(ops);
-                    case "selectJoinBookAuthor"-> jpa_selectJoin(ops);
-                    case "insertSingle"        -> jpa_insertSingle(ops);
-                    case "insertBatch"         -> jpa_insertBatch(ops);
-                    case "updateSingle"        -> jpa_updateSingle(ops);
-                    case "updateBatch"         -> jpa_updateBatch(ops);
-                    case "deleteSingle"        -> jpa_deleteSingle(ops);
-                    case "deleteBatch"         -> jpa_deleteBatch(ops);
-                    default -> 1L;
-                };
+            Long durationMsObj = transactionTemplate.execute(status -> switch (scenario) {
+                case "selectById"          -> jpa_selectById(ops);
+                case "selectCountByStatus" -> jpa_selectCountByStatus(ops);
+                case "selectPageByAuthor"  -> jpa_selectPageByAuthor(ops);
+                case "selectJoinBookAuthor"-> jpa_selectJoin(ops);
+                case "insertSingle"        -> jpa_insertSingle(ops);
+                case "insertBatch"         -> jpa_insertBatch(ops);
+                case "updateSingle"        -> jpa_updateSingle(ops);
+                case "updateBatch"         -> jpa_updateBatch(ops);
+                case "deleteSingle"        -> jpa_deleteSingle(ops);
+                case "deleteBatch"         -> jpa_deleteBatch(ops);
+                default -> 1L;
             });
             heapDeltas.add((double) Math.max(0, usedHeapMb() - heapBefore));
             cpuTimes.add((cpuSnapshot() - cpuBefore) / 1_000_000.0);
@@ -360,10 +352,7 @@ public class BenchmarkCliTest {
         cleanupWorm();
         seedWormData(count);
         long start = System.currentTimeMillis();
-        long available = Book.find.count(FilterBuilder.create().eq("status", "AVAILABLE"));
-        if (available < 0) {
-            throw new IllegalStateException("Unreachable");
-        }
+        Book.find.count(FilterBuilder.create().eq("status", "AVAILABLE"));
         return System.currentTimeMillis() - start;
     }
 
